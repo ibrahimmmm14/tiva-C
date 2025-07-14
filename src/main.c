@@ -1,5 +1,6 @@
 #include <stdint.h>
 #include <stdbool.h>
+#include <stdio.h>
 #include "inc/hw_memmap.h"
 #include "inc/hw_ints.h"
 #include "driverlib/gpio.h"
@@ -9,6 +10,7 @@
 #include "driverlib/uart.h"
 #include "inc/hw_uart.h"
 #include "driverlib/timer.h"
+#include "driverlib/interrupt.h" 
 
 #define LED_RED GPIO_PIN_3   
 #define LED_RED_PORT GPIO_PORTF_BASE
@@ -19,7 +21,7 @@
 #define BUT1 GPIO_PIN_6
 #define BUT2 GPIO_PIN_7
 #define BUT_PORT GPIO_PORTD_BASE
-//#define INT_TIMER0A 19
+#define INT_TIMER0A 19
 
 
 volatile bool flash_flag = false;
@@ -36,9 +38,9 @@ void GPIOPortDIntHandler(void) {
     uint32_t status = GPIOIntStatus(BUT_PORT, true);
     GPIOIntClear(BUT_PORT, status);
  // طباعة قيمة status على UART
-    char buffer[32];
-    snprintf(buffer, sizeof(buffer), "INT STATUS: 0x%02X\n", (unsigned int)status);
-    UARTPutString(UART0_BASE, buffer);
+   // char buffer[32];
+   // snprintf(buffer, sizeof(buffer), "INT STATUS: 0x%02X\n", (unsigned int)status);
+   // UARTPutString(UART0_BASE, buffer);
 
     if (status & BUT1) {
         flash_flag = true;
@@ -72,11 +74,15 @@ void setup() {
 }
 
 void loop() {
-    if (flash_flag) {
-        while (!stop_flag) {
-            rgpflash();
-        }
-        rgpstop();
+    static bool flashing = false;
+
+    if (flash_flag && !flashing) {
+        rgpflash();      // Start timer only once
+        flashing = true;
+    }
+    if (stop_flag && flashing) {
+        rgpstop();       // Stop timer only once
+        flashing = false;
         flash_flag = false;
         stop_flag = false;
     }
@@ -117,6 +123,7 @@ void UARTPutString(uint32_t uart_base, const char *str) {
 
 void Timer0AIntHandler(void) {
     TimerIntClear(TIMER0_BASE, TIMER_TIMA_TIMEOUT);
+    UARTPutString(UART0_BASE, "FLAESH TIMER handler\n");
 
     switch (led_state) {
         case 0:
@@ -149,14 +156,19 @@ void timer_init(void) {
     uint32_t period = (SysCtlClockGet() / 2); // 0.5s interval (adjust as needed)
     TimerLoadSet(TIMER0_BASE, TIMER_A, period - 1);
     TimerIntRegister(TIMER0_BASE, TIMER_A, Timer0AIntHandler);
+    IntEnable(INT_TIMER0A); // Enable Timer0A interrupt
     TimerIntEnable(TIMER0_BASE, TIMER_TIMA_TIMEOUT);
-    IntEnable(INT_TIMER0A);
+    TimerControlStall(TIMER0_BASE, TIMER_A, false); // Allow timer to run in deep sleep mode
+    TimerControlTrigger(TIMER0_BASE, TIMER_A, true); // Enable trigger for the timer
+    TimerControlEvent(TIMER0_BASE, TIMER_A, TIMER_EVENT_POS_EDGE); // Set event to positive edge
+    TimerControlLevel(TIMER0_BASE, TIMER_A, false); // Set level to low 
     TimerEnable(TIMER0_BASE, TIMER_A);
+    UARTPutString(UART0_BASE, "FLAESH TIMER init\n");
 }
 
 void rgpflash() {
     timer_init(); // Start timer-based flashing
-    //UARTPutString(UART0_BASE, "FLAESH TIMER STARTED\n");
+    
 }
 
 void rgpstop() {
