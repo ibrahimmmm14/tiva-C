@@ -23,7 +23,6 @@
 #define BUT_PORT GPIO_PORTD_BASE
 #define INT_TIMER0A 19
 
-
 volatile bool flash_flag = false;
 volatile bool stop_flag = false;
 volatile uint8_t led_state = 0;
@@ -37,10 +36,10 @@ void UARTPutString();
 void GPIOPortDIntHandler(void) {
     uint32_t status = GPIOIntStatus(BUT_PORT, true);
     GPIOIntClear(BUT_PORT, status);
- // طباعة قيمة status على UART
-   // char buffer[32];
-   // snprintf(buffer, sizeof(buffer), "INT STATUS: 0x%02X\n", (unsigned int)status);
-   // UARTPutString(UART0_BASE, buffer);
+
+    // char buffer[32];
+    // snprintf(buffer, sizeof(buffer), "INT STATUS: 0x%02X\n", (unsigned int)status);
+    // UARTPutString(UART0_BASE, buffer);
 
     if (status & BUT1) {
         flash_flag = true;
