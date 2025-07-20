@@ -23,8 +23,8 @@
 #define BUT1 GPIO_PIN_6
 #define BUT2 GPIO_PIN_7
 #define BUT_PORT GPIO_PORTD_BASE
-#define INT_TIMER0A 19 // Timer0A interrupt number
-#define TEMP_SENSOR_ADDR 0x48 // Example address for a temperature sensor
+#define INT_TIMER0A 19
+
 
 volatile bool flash_flag = false;
 volatile bool stop_flag = false;
@@ -43,10 +43,10 @@ void UARTPrintTemperature(float tempC);
 void GPIOPortDIntHandler(void) {
     uint32_t status = GPIOIntStatus(BUT_PORT, true);
     GPIOIntClear(BUT_PORT, status);
- // طباعة قيمة status على UART
-   // char buffer[32];
-   // snprintf(buffer, sizeof(buffer), "INT STATUS: 0x%02X\n", (unsigned int)status);
-   // UARTPutString(UART0_BASE, buffer);
+
+    // char buffer[32];
+    // snprintf(buffer, sizeof(buffer), "INT STATUS: 0x%02X\n", (unsigned int)status);
+    // UARTPutString(UART0_BASE, buffer);
 
     if (status & BUT1) {
         flash_flag = true;
